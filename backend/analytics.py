@@ -1,7 +1,5 @@
 import pandas as pd
-from datetime import datetime, timedelta
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
+from datetime import datetime
 from database import get_connection
 
 
@@ -134,39 +132,39 @@ def get_churn_predictions():
         return_count    = ("returned",     "sum"),
     ).reset_index()
 
-    features["churned"] = (features["days_since_last"] > 90).astype(int)
+    max_days   = features["days_since_last"].max()
+    max_orders = features["total_orders"].max()
+    max_spend  = features["total_spend"].max()
+    max_rating = 5.0
 
-    X = features[["days_since_last", "total_orders", "total_spend", "avg_rating", "return_count"]]
-    y = features["churned"]
+    def churn_score(row):
+        recency_score  = (row["days_since_last"] / max_days) * 50
+        order_score    = (1 - row["total_orders"] / max_orders) * 20
+        spend_score    = (1 - row["total_spend"]  / max_spend)  * 15
+        rating_score   = (1 - row["avg_rating"]   / max_rating) * 10
+        return_rate    = row["return_count"] / row["total_orders"] if row["total_orders"] > 0 else 0
+        return_score   = return_rate * 5
+        total = recency_score + order_score + spend_score + rating_score + return_score
+        return round(min(total, 99), 1)
 
-    if y.sum() < 5 or (y == 0).sum() < 5:
-        return []
-
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    model = LogisticRegression(max_iter=500)
-    model.fit(X_scaled, y)
-
-    features["churn_prob"] = (model.predict_proba(X_scaled)[:, 1] * 100).round(1)
+    features["churn_prob"] = features.apply(churn_score, axis=1)
 
     def risk_label(p):
-        if p >= 70: return "High"
-        if p >= 40: return "Medium"
+        if p >= 60: return "High"
+        if p >= 35: return "Medium"
         return "Low"
 
     features["risk_level"] = features["churn_prob"].apply(risk_label)
 
-    at_risk = features[features["churn_prob"] >= 40].copy()
+    at_risk = features[features["churn_prob"] >= 35].copy()
     at_risk = at_risk.merge(cust_df[["id", "name", "email", "city"]], left_on="customer_id", right_on="id")
-
     at_risk["total_spend"] = at_risk["total_spend"].round(2)
 
     return (
         at_risk[["name", "email", "city", "days_since_last",
                  "total_orders", "total_spend", "churn_prob", "risk_level"]]
         .sort_values("churn_prob", ascending=False)
-        .head(50)
+        .head(60)
         .to_dict(orient="records")
     )
 
