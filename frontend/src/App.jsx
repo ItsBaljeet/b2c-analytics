@@ -18,7 +18,7 @@ export default function App() {
       <div className="app">
         <nav className="navbar">
           <div className="nav-brand">
-            <span className="nav-logo">A</span>
+            <img src="/logo.png" alt="Anabasis Logo" style={{ height: "60px", width: "60px", objectFit: "contain", borderRadius: "6px" }} />
             <span className="nav-title">Anabasis</span>
           </div>
           <div className="nav-links">
@@ -45,8 +45,7 @@ export default function App() {
         </main>
 
         <footer className="footer">
-          B2C Data Analytics Software 
-          Tanzeel Imaad | B.Sc. | JMI
+          Data Analytics Software -          Tanzeel Imaad | B.Sc. | JMI
         </footer>
       </div>
     </BrowserRouter>
@@ -58,7 +57,7 @@ function DashboardPage() {
     <div>
       <div className="page-header">
         <h1 className="page-title">Dashboard Overview</h1>
-        <p className="page-sub">Real-time insights for your B2C business</p>
+        <p className="page-sub">Real-time insights for your business</p>
       </div>
       <Summary />
       <div className="quick-nav">
